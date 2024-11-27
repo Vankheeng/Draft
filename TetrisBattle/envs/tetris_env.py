@@ -6,13 +6,15 @@ import gym
 from gym import spaces
 from gym import utils
 from gym.utils import seeding
+from PIL import Image
 
 from TetrisBattle.envs.tetris_interface import TetrisInterface, TetrisDoubleInterface, \
     TetrisSingleInterface
 
+
 class TetrisEnv(gym.Env, abc.ABC):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human', 'rgb_array'], 
+    metadata = {'render.modes': ['human', 'rgb_array'],
                 'obs_type': ['image', 'grid']}
 
     def __init__(self, interface, gridchoice="none", obs_type="grid", mode="rgb_array"):
@@ -23,8 +25,8 @@ class TetrisEnv(gym.Env, abc.ABC):
 
         # Example when using discrete actions:
 
-        self.game_interface = interface(gridchoice=gridchoice, 
-                                        obs_type=obs_type, 
+        self.game_interface = interface(gridchoice=gridchoice,
+                                        obs_type=obs_type,
                                         mode=mode)
 
         self._n_actions = self.game_interface.n_actions
@@ -40,11 +42,11 @@ class TetrisEnv(gym.Env, abc.ABC):
         self.seed()
 
         if obs_type == "image":
-            self.observation_space = spaces.Box(low=0, high=255, 
-                shape=self.game_interface.screen_size() + [3], dtype=np.uint8)
+            self.observation_space = spaces.Box(low=0, high=255,
+                                                shape=self.game_interface.screen_size() + [3], dtype=np.uint8)
         elif obs_type == "grid":
-            self.observation_space = spaces.Box(low=0, high=1, 
-                shape=list(self.game_interface.get_seen_grid().shape), dtype=np.float32)
+            self.observation_space = spaces.Box(low=0, high=1,
+                                                shape=list(self.game_interface.get_seen_grid().shape), dtype=np.float32)
 
         self.reset()
 
@@ -59,17 +61,18 @@ class TetrisEnv(gym.Env, abc.ABC):
 
     def take_turns(self):
         return self.game_interface.take_turns()
-        
+
     def reset(self, avatar1_path=None, avatar2_path=None, name1=None, name2=None, fontsize=40):
 
         self.accum_rewards = 0
         self.infos = {}
         # Reset the state of the environment to an initial state
 
-        ob = self.game_interface.reset(avatar1_path=avatar1_path, avatar2_path=avatar2_path, name1=name1, name2=name2, fontsize=fontsize)
+        ob = self.game_interface.reset(avatar1_path=avatar1_path, avatar2_path=avatar2_path, name1=name1, name2=name2,
+                                       fontsize=fontsize)
         ob, _, _, _, = self.game_interface.act(0)
         return ob
-    
+
     def render(self, mode='human', close=False):
         # Render the environment to the screen
         img = self.game_interface.get_screen_shot()
@@ -87,11 +90,22 @@ class TetrisEnv(gym.Env, abc.ABC):
 
 class TetrisSingleEnv(TetrisEnv):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human', 'rgb_array'], 
+    metadata = {'render.modes': ['human', 'rgb_array'],
                 'obs_type': ['image', 'grid']}
 
     def __init__(self, gridchoice="none", obs_type="grid", mode="rgb_array"):
         super(TetrisSingleEnv, self).__init__(TetrisSingleInterface, gridchoice, obs_type, mode)
+        self.tetris_interface = TetrisSingleInterface()
+
+    def get_screen_shot(self):
+        return self.tetris_interface.get_screen_shot()
+
+    def get_seen_grid(self):
+        return self.tetris_interface.get_seen_grid()
+
+    def get_obs(self):
+        # Gọi get_obs thông qua đối tượng
+        return self.tetris_interface.get_obs()
 
     def step(self, action):
         # Execute one time step within the environment
@@ -119,14 +133,15 @@ class TetrisSingleEnv(TetrisEnv):
 
         return ob, reward, end, infos
 
+
 class TetrisDoubleEnv(TetrisEnv):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human', 'rgb_array'], 
+    metadata = {'render.modes': ['human', 'rgb_array'],
                 'obs_type': ['image', 'grid']}
 
     def __init__(self, gridchoice="none", obs_type="grid", mode="rgb_array"):
         super(TetrisDoubleEnv, self).__init__(TetrisDoubleInterface, gridchoice, obs_type, mode)
-  
+
     def step(self, action):
         # Execute one time step within the environment
 
@@ -145,6 +160,7 @@ class TetrisDoubleEnv(TetrisEnv):
 
         return ob, reward, end, infos
 
+
 if __name__ == "__main__":
 
     import time
@@ -152,7 +168,7 @@ if __name__ == "__main__":
     env = TetrisSingleEnv(gridchoice="none", obs_type="grid", mode="human")
 
     ob = env.reset()
-    
+
     start = time.time()
 
     last = 0
@@ -175,7 +191,7 @@ if __name__ == "__main__":
         # print(reward)
         if len(infos) != 0:
             print(infos)
-        
+
         # im = Image.fromarray(ob)
         # im.save("samples/%d.png" % i)
         if done:
