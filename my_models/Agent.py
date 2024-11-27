@@ -33,7 +33,7 @@ class DeepQNetwork(nn.Module):
 class Agent:
   def __init__(self, turn, epsilon):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    weight_file_path = os.path.join(dir_path, turn, 'weight.pth')
+    weight_file_path = os.path.join(dir_path, turn, 'weight')
     self.network = DeepQNetwork()
     self.network.load_state_dict(torch.load(weight_file_path))
 

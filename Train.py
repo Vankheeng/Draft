@@ -41,8 +41,6 @@ def train(opt, model, optimizer, start_epoch=0):
         torch.cuda.manual_seed(123)
     else:
         torch.manual_seed(123)
-    if not os.path.exists(opt.saved_path):
-        os.makedirs(opt.saved_path)
     if os.path.isdir(opt.log_path):
         shutil.rmtree(opt.log_path)
     os.makedirs(opt.log_path)
@@ -69,7 +67,6 @@ def train(opt, model, optimizer, start_epoch=0):
             with torch.no_grad():
                 recent_state = env.get_seen_grid()
                 recent_state = torch.tensor(recent_state, dtype=torch.float32).unsqueeze(0)  # Tạo batch dimension
-                print(recent_state.shape)
                 if torch.cuda.is_available():
                     recent_state = recent_state.cuda()
                 predictions = model(recent_state)
@@ -93,8 +90,6 @@ def train(opt, model, optimizer, start_epoch=0):
         epoch += 1
         batch = sample(replay_memory, min(len(replay_memory), opt.batch_size))
         state_batch, reward_batch, next_state_batch, done_batch = zip(*batch)
-        for idx, state in enumerate(state_batch):
-            print(f"State {idx} shape: {state.shape}")
         state_batch = torch.stack([torch.tensor(state, dtype=torch.float32) for state in state_batch])
         reward_batch = torch.tensor(np.array(reward_batch, dtype=np.float32)[:, None])
         next_state_batch = torch.stack([torch.tensor(state, dtype=torch.float32) for state in next_state_batch])
@@ -133,28 +128,10 @@ def train(opt, model, optimizer, start_epoch=0):
         if epoch > 0 and epoch % opt.save_interval == 0:
             torch.save(model, "{}/tetris_{}".format(opt.saved_path, epoch))
         if epoch > 0 and epoch % opt.save_interval == 0:
-            save_checkpoint(model, optimizer, epoch, filepath=checkpoint_path)
             print(f"Checkpoint saved at epoch {epoch}")
 
-    save_checkpoint(model, optimizer, epoch, filepath=checkpoint_path)
     torch.save(model, "{}/tetris".format(opt.saved_path))
 
-# Lưu checkpoint
-def save_checkpoint(model, optimizer, replay_memory, epoch, filepath='model_checkpoint.pth'):
-    torch.save({
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'replay_memory': list(replay_memory),  # Chuyển deque thành list để lưu
-    }, filepath)
-
-def load_checkpoint(model, optimizer, replay_memory, filepath='model_checkpoint.pth'):
-    checkpoint = torch.load(filepath)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    replay_memory.extend(checkpoint['replay_memory'])  # Khôi phục replay_memory
-    epoch = checkpoint['epoch']
-    return epoch
 
 
 # if __name__ == "__main__":
@@ -163,16 +140,7 @@ def load_checkpoint(model, optimizer, replay_memory, filepath='model_checkpoint.
 #     load_checkpoint()
 if __name__ == "__main__":
     opt = get_args()
-
-    # Kiểm tra xem checkpoint có tồn tại không
-    checkpoint_path = "model_checkpoint.pth"
     model = DeepQNetwork()  # Tạo model
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)  # Tạo optimizer
-
     start_epoch = 0
-    if os.path.exists(checkpoint_path):
-        print("Loading checkpoint...")
-        start_epoch = load_checkpoint(model, optimizer, checkpoint_path)
-
-    # Bắt đầu training từ epoch đã lưu
     train(opt, model, optimizer, start_epoch)
