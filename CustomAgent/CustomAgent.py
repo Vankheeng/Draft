@@ -33,12 +33,20 @@ class DeepQNetwork(nn.Module):
 
 
 class Agent:
-  def __init__(self, turn):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    weight_file_path = os.path.join(dir_path, turn, 'weight')
+  def __init__(self, model, epsilon=0.1):
+    self.model = model
+    self.epsilon = epsilon
+    base_dir = "F:/Python/pythonProject/AI challenge/Double-Agent-Tetris/trained_models"
+    weight_file_path = os.path.join(base_dir, "weight.pth")
 
-    self.network = DeepQNetwork()
-    self.network.load_state_dict(torch.load(weight_file_path))
+    if os.path.exists(weight_file_path):
+      self.model.load_state_dict(torch.load(weight_file_path, map_location=self.model.device))
+      print(f"Loaded weights from {weight_file_path}")
+    else:
+      raise FileNotFoundError(
+        f"Weights file not found at {weight_file_path}. "
+        f"Please ensure the file exists and the path is correct.")
+
   def choose_action(self, state):
     if random.random() < self.epsilon:
       return random.randint(0, 7)  # Chọn ngẫu nhiên
